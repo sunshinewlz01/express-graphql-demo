@@ -1,2 +1,3 @@
 # express-graphql-demo
-express-graphql-demo
+
+Demo for express-graphql.
