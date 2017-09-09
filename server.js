@@ -5,7 +5,7 @@ import app from './src/app';
 import http from 'http';
 import logger from './src/utils/logger.js';
 
-const port = 3000;
+const port = 8080;
 app.set('port',port);
 let server = http.createServer(app);
 server.listen(port);

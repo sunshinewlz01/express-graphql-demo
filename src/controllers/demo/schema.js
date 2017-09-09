@@ -6,6 +6,7 @@ import {
   GraphQLObjectType,
   GraphQLString,
   GraphQLList,
+  GraphQLInt,
 } from 'graphql';
 import {authors, books} from './db';
 import authorType from './AuthorType';
@@ -17,8 +18,24 @@ const schema = new GraphQLSchema({
     fields: {
       authors: {
         type: new GraphQLList(authorType),
-        resolve: _ => {
+        args: {
+          authorId: {
+            type:GraphQLInt,
+          }
+        },
+        resolve: () => {
           return authors;
+        }
+      },
+      authorSearch:{
+        type: new GraphQLList(authorType),
+        args: {
+          name: {
+            type:GraphQLString,
+          }
+        },
+        resolve: (object,{name}) => {
+          return authors.filter(author => author.name.includes(name));
         }
       },
       books: {
@@ -32,16 +49,17 @@ const schema = new GraphQLSchema({
         args: {
           keyword: {
             type: GraphQLString,
-          }
+          },
         },
         resolve: (object, {keyword}, context, info) => {
-          return books.filter(book => book.title.includes(keyword));
+            return books.filter(book => book.title.includes(keyword));
         }
       },
       secret: {
         type: GraphQLString,
         resolve: (object, args, context, {rootValue}) => {
           const user = rootValue.user;
+          console.log('user '+user);
           if(!user) {
             return 'only authorized users can know the secret';
           }
