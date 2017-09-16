@@ -8,36 +8,65 @@ import graphqlHTTP from 'express-graphql';
 import schema from './schema';
 import co from 'co';
 import CommonService from '../../services/CommonService';
+import redis from 'redis';
+
 
 const CitiesController = express.Router();
+const redisClient = redis.createClient();
 CitiesController.use(cors());
 
 CitiesController.use('/get-cities', (req, res) => {
-  getProvinceCities(true).then((result) => {
-    let cities = JSON.parse(result.cities);
-    let provinces = JSON.parse(result.provinces);
-    let provinceGroupCities = combinedProvinceCities(provinces,cities);
-    console.log(provinceGroupCities);
-    graphqlHTTP({
-      schema: schema,
-      pretty: true,
-      graphiql: true,
-      rootValue: {citiesData:provinceGroupCities}
-    })(req,res);
-  },(error) => {
-    console.log(error);
-  });
+  if(redisClient.get("provinceGroupCities")) {
+    redisClient.get("provinceGroupCities", function(err, reply) {
+      console.log(reply.toString());
+      let provinceGroupCities = JSON.parse(reply.toString());
+      graphqlHTTP({
+        schema: schema,
+        pretty: true,
+        graphiql: true,
+        rootValue: {citiesData:provinceGroupCities}
+      })(req,res);
+    });
+  } else {
+    getProvinceCities().then((result) => {
+      let cities = JSON.parse(result.cities);
+      let provinces = JSON.parse(result.provinces);
+      let provinceGroupCities = combinedProvinceCities(provinces,cities);
+      redisClient.set("provinceGroupCities",JSON.stringify(provinceGroupCities));
+      graphqlHTTP({
+        schema: schema,
+        pretty: true,
+        graphiql: true,
+        rootValue: {citiesData:provinceGroupCities}
+      })(req,res);
+    },(error) => {
+      console.log(error);
+    });
+
+  }
+
+
 });
 
-const getProvinceCities = co.wrap(function *(){
-  let cities = CommonService.getCities();
-  let provinces = CommonService.getProvinces();
-  let provinceCities = yield {
+const getProvinceCities = async function () {
+  let cities = await CommonService.getCities();
+  let provinces = await CommonService.getProvinces();
+  let provinceCities = {
     cities:cities,
     provinces:provinces
   };
   return provinceCities;
-});
+};
+
+// const getProvinceCities = co.wrap(function *(){
+//   let cities = CommonService.getCities();
+//   let provinces = CommonService.getProvinces();
+//   let provinceCities = yield {
+//     cities:cities,
+//     provinces:provinces
+//   };
+//   return provinceCities;
+// });
 
 const combinedProvinceCities = function(provinces,cities) {
   let combinedProvinceCities = {};
