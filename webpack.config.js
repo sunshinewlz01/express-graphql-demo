@@ -12,7 +12,7 @@ module.exports = {
     filename: '[name].js'
   },
   resolve: {
-    extensions: ['', '.js']
+    extensions: ['', '.js','.json']
   },
   externals: externals,
   node: {
@@ -28,11 +28,16 @@ module.exports = {
     loaders: [
       {
         test: /\.js$/,
-        loader: 'babel',
+        loader: 'babel-loader',
         query: {
+          plugins: ['transform-runtime'],
           presets: ['es2015','stage-0']
         },
         exclude: /node_modules/
+      },
+      {
+        test: /\.json$/,
+        loader: 'json-loader'
       }
     ]
   },
